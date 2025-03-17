@@ -25,9 +25,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var myAdapter : ArrayAdapter<String>; // connect from data to gui
     private var dataDefList = ArrayList<String>(); // data
     private var wordDefinition = mutableListOf<WordDefinition>();
-    private var score : Int = 1;
-    private var totalCorrect : Int = 2;
-    private var totalWrong : Int = 3;
+    private var score : Int = 0;
+    private var streak: Int = 0;
+    private var totalCorrect : Int = 0;
+    private var totalWrong : Int = 0;
+    private var lstreak: Int = 0
+    private var correctDef: String = "";
+    var counter = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,11 +46,25 @@ class MainActivity : AppCompatActivity() {
         loadWordsFromDisk()
 
         pickNewWordAndLoadDataList();
+        //
         setupList();
+        //setScore(0)
 
         val defList = findViewById<ListView>(R.id.dynamic_def_list);
         defList.setOnItemClickListener { _, _, index, _ ->
-            pickNewWordAndLoadDataList();
+            val selectedDef = dataDefList[index]
+            if (selectedDef == correctDef) {
+                setStreak (streak + 1)
+                setScore (score + streak)
+                totalCorrect ++
+                longestStreak()
+            } else {
+                //longestStreak()
+                setStreak (0)
+                totalWrong ++
+            }
+            //longestStreak()
+            pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged();
         };
     }
@@ -54,6 +72,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
 
         if (requestCode == ADD_WORD_CODE && resultCode == RESULT_OK && data != null){
             val word = data.getStringExtra("word")?:""
@@ -66,7 +85,6 @@ class MainActivity : AppCompatActivity() {
                 return
 
             wordDefinition.add(WordDefinition(word, def))
-
             pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged()
         }
@@ -105,14 +123,17 @@ class MainActivity : AppCompatActivity() {
         wordDefinition.shuffle();
 
         dataDefList.clear();
+        correctDef = wordDefinition[0].definition
 
-        for(wd in wordDefinition){
-            dataDefList.add(wd.definition);
-        }
+        val threedef = wordDefinition
+            .filter { it.definition != correctDef }
+            .shuffled()
+            .take(3)
 
-        findViewById<TextView>(R.id.word).text = wordDefinition[0].word;
-
-        dataDefList.shuffle();
+        dataDefList.add(correctDef)
+        threedef.forEach {dataDefList.add(it.definition)}
+        dataDefList.shuffle()
+        findViewById<TextView>(R.id.word).text = wordDefinition[0].word
     }
 
     private fun setupList()
@@ -124,12 +145,15 @@ class MainActivity : AppCompatActivity() {
         defList.adapter = myAdapter;
     }
 
+
     fun openStats(view : View)
     {
+        Log.d("DEBUG", "Sending Longest Streak: $lstreak")
         var myIntent = Intent(this, StatsActivity::class.java);
         myIntent.putExtra("score", score.toString());
         myIntent.putExtra("totalCorrect", totalCorrect.toString());
         myIntent.putExtra("totalWrong", totalWrong.toString());
+        myIntent.putExtra("lstreak", lstreak.toString());
         startActivity(myIntent)
     }
 
@@ -137,5 +161,22 @@ class MainActivity : AppCompatActivity() {
     {
         var myIntent = Intent(this, AddWordActivity::class.java);
         startActivityForResult(myIntent, ADD_WORD_CODE)
+    }
+
+    fun setScore(_score: Int)
+    {
+        score = _score
+        findViewById<TextView>(R.id.cscore_text).text = "Score : " + score;
+    }
+    fun setStreak(_streak: Int)
+    {
+        streak = _streak
+        findViewById<TextView>(R.id.Streak_Text).text = "Streak : " + streak;
+    }
+    fun longestStreak()
+    {
+        if (streak > lstreak){
+            lstreak = streak;
+        }
     }
 }

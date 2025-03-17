@@ -28,6 +28,7 @@ class AddWordActivity : AppCompatActivity() {
         // error checking
 
         val myIntent = Intent()
+        //getExtra is used to pass info between activities
         myIntent.putExtra("word", word)
         myIntent.putExtra("def", def)
         setResult(RESULT_OK, myIntent)
