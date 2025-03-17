@@ -9,14 +9,19 @@ import android.widget.Button
 import android.widget.ImageView
 import android.widget.ListView
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import java.io.BufferedWriter
 import java.io.File
 import java.io.FileInputStream
+import java.io.FileWriter
+import java.io.IOException
 import java.util.Random
 import java.util.Scanner
+
 
 data class WordDefinition(val word: String, val definition: String);
 
@@ -31,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     private var totalWrong : Int = 0;
     private var lstreak: Int = 0
     private var correctDef: String = "";
-    var counter = 0
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,9 +51,7 @@ class MainActivity : AppCompatActivity() {
         loadWordsFromDisk()
 
         pickNewWordAndLoadDataList();
-        //
         setupList();
-        //setScore(0)
 
         val defList = findViewById<ListView>(R.id.dynamic_def_list);
         defList.setOnItemClickListener { _, _, index, _ ->
@@ -59,20 +62,21 @@ class MainActivity : AppCompatActivity() {
                 totalCorrect ++
                 longestStreak()
             } else {
-                //longestStreak()
                 setStreak (0)
                 totalWrong ++
             }
-            //longestStreak()
             pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged();
+
+            // toast popup
+            //Toast.makeText(this, "hello", Toast.LENGTH_LONG).show()
         };
     }
 
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
+        val file = File(applicationContext.filesDir, "user_data.csv")
 
         if (requestCode == ADD_WORD_CODE && resultCode == RESULT_OK && data != null){
             val word = data.getStringExtra("word")?:""
@@ -83,8 +87,9 @@ class MainActivity : AppCompatActivity() {
 
             if ( word == "" || def == "")
                 return
-
-            wordDefinition.add(WordDefinition(word, def))
+            addToUser(file.absolutePath, word, def)
+            //wordDefinition.add(WordDefinition(word, def))
+            loadWordsFromDisk()
             pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged()
         }
@@ -134,6 +139,22 @@ class MainActivity : AppCompatActivity() {
         threedef.forEach {dataDefList.add(it.definition)}
         dataDefList.shuffle()
         findViewById<TextView>(R.id.word).text = wordDefinition[0].word
+    }
+
+    private fun addToUser(filePath: String, word: String, def: String)
+    {
+        val file = File(filePath)
+        try {
+            BufferedWriter(FileWriter(file, true)).use { writer -> // 'true' for append mode
+                writer.write(word)
+                writer.write("|")
+                writer.write(def)
+                writer.newLine()
+            }
+        } catch (e: IOException)
+        {
+            return
+        }
     }
 
     private fun setupList()
