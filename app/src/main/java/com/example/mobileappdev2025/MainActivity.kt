@@ -4,35 +4,22 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
-import android.widget.Button
-import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.constraintlayout.widget.ConstraintSet.Constraint
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.time.delay
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileWriter
 import java.io.IOException
-import java.util.Random
 import java.util.Scanner
-import java.time.Duration
-import kotlin.time.DurationUnit
-import kotlin.time.toDuration
 
 
 data class WordDefinition(val word: String, val definition: String);
@@ -61,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         loadWordsFromDisk()
-
         pickNewWordAndLoadDataList();
         setupList();
 
@@ -82,8 +68,6 @@ class MainActivity : AppCompatActivity() {
             pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged();
 
-            // toast popup
-            //Toast.makeText(this, "hello", Toast.LENGTH_LONG).show()
         };
     }
 
@@ -96,13 +80,9 @@ class MainActivity : AppCompatActivity() {
             val word = data.getStringExtra("word")?:""
             val def = data.getStringExtra("def")?:""
 
-            Log.d("MAD", word)
-            Log.d("MAD", def)
-
             if ( word == "" || def == "")
                 return
             addToUser(file.absolutePath, word, def)
-            //wordDefinition.add(WordDefinition(word, def))
             loadWordsFromDisk()
             pickNewWordAndLoadDataList()
             myAdapter.notifyDataSetChanged()
@@ -111,60 +91,44 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("MyActivity", "onDestroy called")
-
-        // Delay the finishing of the activity
+        // Delay onDestroy
         Handler(Looper.getMainLooper()).postDelayed({
-            // Create and show the file contents
             val file = File(applicationContext.filesDir, "user_stats.csv")
             saveToUserStats(file.absolutePath, score, totalCorrect, totalWrong, lstreak)
             displayStats(file.absolutePath)
-
-            // After the delay, finish the activity (destroy it)
-            finish() // This will close the activity after 5 seconds
-        }, 5000) // Delay in milliseconds (5 seconds)
+            finish()
+        }, 5000)
     }
 
     override fun onBackPressed() {
-        Log.d("MyActivity", "Back button pressed")
-
         try {
-            // Get the root layout
-            val rootView = findViewById<ConstraintLayout>(R.id.main) // Update to your layout type
-            val fileTextView = findViewById<TextView>(R.id.statsTextView) // Update to the actual TextView ID
+            val rootView = findViewById<ConstraintLayout>(R.id.main) // Update Layout Type
+            val fileTextView = findViewById<TextView>(R.id.statsTextView)
 
             if (rootView != null) {
                 for (i in 0 until rootView.childCount) {
                     val view = rootView.getChildAt(i)
-
-                    // Hide everything EXCEPT the TextView where the file content is displayed
                     if (view.id != R.id.statsTextView) {
                         view.visibility = View.GONE
                     }
                 }
             } else {
-                Log.e("MyActivity", "Root view not found!")
+                return
             }
 
-            // Wait 1 second before displaying the file content
             Handler(Looper.getMainLooper()).postDelayed({
                 val file = File(applicationContext.filesDir, "user_stats.csv")
                 saveToUserStats(file.absolutePath, score, totalCorrect, totalWrong, lstreak)
-                displayStats(file.absolutePath) // This should now be visible
-
-                // Ensure the TextView is VISIBLE so it can display the file content
+                displayStats(file.absolutePath)
                 fileTextView.visibility = View.VISIBLE
-
-                // Now delay the finish for 5 seconds (activity stays on screen)
                 Handler(Looper.getMainLooper()).postDelayed({
                     super.onBackPressed()
-                }, 5000) // 5-second delay to close app after showing file
+                }, 5000)
 
-            }, 100) // 1-second delay before displaying the file
+            }, 100)
 
         } catch (e: Exception) {
-            Log.e("MyActivity", "Error during onBackPressed: ${e.message}")
-            e.printStackTrace()
+            return
         }
     }
 
@@ -278,7 +242,6 @@ class MainActivity : AppCompatActivity() {
                 stats.append("$line\n")
             }
             statsTextView.text = stats.toString()
-            Log.d("MyActivity", "Displaying file content from: $filePath")
         } else {
             statsTextView.text = "File does not exist."
         }
